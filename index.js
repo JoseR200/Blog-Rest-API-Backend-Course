@@ -9,7 +9,7 @@ conection();
 const app = express();
 const port = 3900;
 
-app.use(cors()).use(express.json()).use(express.urlencoded());
+app.use(cors()).use(express.json()).use(express.urlencoded({extended: true}));
 
 
 const article_routes = require("./routes/ArticleRoutes");

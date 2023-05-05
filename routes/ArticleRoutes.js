@@ -7,5 +7,6 @@ router.get("/test-route", ArticleController.test)
 router.get("/course", ArticleController.course)
 
 router.post("/save", ArticleController.save);
+router.get("/articles/:last?", ArticleController.getArticles);
 
 module.exports = router;

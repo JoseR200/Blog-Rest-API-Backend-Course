@@ -52,8 +52,37 @@ const save = (req, res) => {
     });
 }
 
+const getArticles = (req, res) => {
+    let request = Article.find({});
+
+    if(req.params.last && req.params.last != undefined){
+        request.limit(2);
+    }
+    
+    request.sort({date: -1}).then((articles) => {
+        if (!articles) {
+          return res.status(404).json({
+            status: "error",
+            mensaje: "No se han encontrado articulos"
+          })
+        }
+        return res.status(200).send({
+          status: "success",
+          count: articles.length,
+          articles
+        });
+    }).catch((error) => {
+        return res.status(404).json({
+            status: "error",
+            mensaje: "No se han encontrado articulos"
+        })
+    });
+
+}
+
 module.exports = {
     test,
     course,
-    save
+    save,
+    getArticles
 }

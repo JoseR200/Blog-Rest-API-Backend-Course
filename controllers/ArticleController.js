@@ -1,3 +1,5 @@
+const fs = require("fs");
+const path = require("path")
 const {validateArticle} = require("../helpers/validate");
 const Article = require("../models/ArticleModel");
 
@@ -154,6 +156,97 @@ const editArticle = (req, res) => {
     })
 }
 
+const upload = (req, res) => {
+    if (!req.file && !req.files){
+        return res.status(404).json({
+            status: "error",
+            mensaje: "Request invalid"
+        })
+    }
+
+    let file = req.file.originalname;
+
+    let file_split = file.split("\.");
+    let extention = file_split[1];
+
+    if(extention != 'png' && extention != 'jpg' && extention != 'jpeg' && extention != 'gif'){
+        fs.unlink(req.file.path, (error) => {
+            return res.status(400).json({
+                status: "error",
+                mensaje: "Image invalid"
+            })
+        })
+    } else {
+        let id = req.params.id;
+
+        Article.findOneAndUpdate({_id: id}, {image: req.file.filename}, {new: true}).then((articleUpdated) => {
+            if (!articleUpdated) {
+                return res.status(404).json({
+                status: "error",
+                mensaje: "No se ha encontrado el articulo"
+                })
+            }
+            return res.status(200).send({
+                status: "success",
+                article: articleUpdated,
+                file: req.file
+            });
+        }).catch((error) => {
+            return res.status(404).json({
+                status: "error",
+                mensaje: "No se ha encontrado el articulo"
+            })
+        });
+    }
+
+}
+
+const getImage = (req, res) => {
+    var file = req.params.image;
+    var path_file = './images/articles/'+file;
+
+    fs.stat(path_file, (err, exists) => {
+        if(exists){
+            return res.sendFile(path.resolve(path_file));
+        }
+        else{
+            return res.status(404).send({
+                status: 'error',
+                message: 'La imagen no existe',
+                path_file: path_file
+            });
+        }
+    })  
+}
+
+const search = (req, res) => {
+    var searchString = req.params.search;
+
+    Article.find({ "$or":[
+        { "title": { "$regex": searchString, "$options": "i"}},
+        { "content": { "$regex": searchString, "$options": "i"}}
+    ]})
+    .sort([['date', 'descending']])
+    .then((articles) => {
+        if(!articles || articles.length <= 0){
+            return res.status(404).send({
+                status: 'error',
+                message: 'No hay articulos que coincidan con tu busqueda'
+            });
+        }
+
+        return res.status(200).send({
+            status: 'success',
+            articles
+        });
+    }).catch(()=>{
+        return res.status(500).send({
+            status: 'error',
+            message: 'Error en la peticion'
+        });
+    });
+}
+
 module.exports = {
     test,
     course,
@@ -161,5 +254,8 @@ module.exports = {
     getArticles,
     getArticle,
     deleteArticle,
-    editArticle
+    editArticle,
+    upload,
+    getImage,
+    search
 }

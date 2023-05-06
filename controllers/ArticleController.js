@@ -1,5 +1,5 @@
-const validator = require("validator")
-const Article = require("../models/ArticleModel")
+const {validateArticle} = require("../helpers/validate");
+const Article = require("../models/ArticleModel");
 
 const test = (req, res) => {
     return res.status(200).json({
@@ -22,17 +22,12 @@ const save = (req, res) => {
     let params = req.body;
 
     try{
-        let validate_title = !validator.isEmpty(params.title) && 
-                            validator.isLength(params.title, {min: 5, max: undefined});
-        let validate_content = !validator.isEmpty(params.content);
-
-        if(!validate_title || !validate_content){
-            throw new Error("Couldn't validate the info");
-        }
+        validateArticle(params);
     } catch(error){
         return res.status(400).json({
             status: "error",
-            message: "Data not valid"
+            message: "Data not valid",
+            error
         })
     }
 
@@ -80,9 +75,91 @@ const getArticles = (req, res) => {
 
 }
 
+const getArticle = (req, res) => {
+    let id = req.params.id;
+
+    Article.findById(id).then((article) => {
+        if (!article) {
+            return res.status(404).json({
+              status: "error",
+              mensaje: "No se ha encontrado el articulo"
+            })
+        }
+        return res.status(200).send({
+            status: "success",
+            article
+        });
+    }).catch((error) => {
+        return res.status(404).json({
+            status: "error",
+            mensaje: "No se ha encontrado el articulo"
+        })
+    })
+}
+
+const deleteArticle = (req, res) => {
+    let id = req.params.id;
+
+    Article.findOneAndDelete({_id: id}).then((deletedArticle) => {
+        if (!deletedArticle) {
+            return res.status(404).json({
+              status: "error",
+              mensaje: "No se ha encontrado el articulo"
+            })
+        }
+        return res.status(200).send({
+            status: "success",
+            article: deletedArticle
+        });
+    }
+    ).catch((error) => {
+        return res.status(404).json({
+            status: "error",
+            mensaje: "No se ha encontrado el articulo"
+        })
+    })
+}
+
+const editArticle = (req, res) => {
+    let id = req.params.id;
+
+    let params = req.body;
+
+    try{
+        validateArticle(params);
+    } catch(error){
+        return res.status(400).json({
+            status: "error",
+            message: "Data not valid",
+            error
+        })
+    }
+
+    Article.findOneAndUpdate({_id: id}, req.body, {new: true}).then((articleUpdated) => {
+        if (!articleUpdated) {
+            return res.status(404).json({
+              status: "error",
+              mensaje: "No se ha encontrado el articulo"
+            })
+        }
+        return res.status(200).send({
+            status: "success",
+            article: articleUpdated
+        });
+    }).catch((error) => {
+        return res.status(404).json({
+            status: "error",
+            mensaje: "No se ha encontrado el articulo"
+        })
+    })
+}
+
 module.exports = {
     test,
     course,
     save,
-    getArticles
+    getArticles,
+    getArticle,
+    deleteArticle,
+    editArticle
 }
